@@ -1,0 +1,144 @@
+diff --git a/resources/views/registrations/admin-create.blade.php b/resources/views/registrations/admin-create.blade.php
+new file mode 100644
+index 0000000..7363944
+--- /dev/null
++++ b/resources/views/registrations/admin-create.blade.php
+@@ -0,0 +1,93 @@
++@extends('layouts.app')
++@section('title', 'Tambah Pendaftaran Calon Member')
++@section('content')
++<div class="page-header">
++    <div>
++        <h1 class="page-title mb-1">Tambah Pendaftaran Calon Member</h1>
++        <p class="text-muted mb-0">Buatkan pendaftaran atas nama calon member yang sudah memiliki akun.</p>
++    </div>
++    <a href="{{ route('registrations.index') }}" class="btn btn-outline-secondary">Kembali</a>
++</div>
++@if($errors->any())
++    <div class="alert alert-danger" role="alert">
++        <div class="fw-semibold mb-1">Periksa kembali data yang dimasukkan:</div>
++        <ul class="mb-0">
++            @foreach($errors->all() as $error)
++                <li>{{ $error }}</li>
++            @endforeach
++        </ul>
++    </div>
++@endif
++<div class="card app-card">
++    <div class="card-body p-4">
++        @if($users->isEmpty() || $packages->isEmpty())
++            <div class="alert alert-info mb-0">
++                @if($users->isEmpty())
++                    Tidak ada calon member yang tersedia (tidak ada pendaftar tanpa pendaftaran aktif).
++                @else
++                    Belum ada paket aktif yang dapat dipilih.
++                @endif
++            </div>
++        @else
++            <form method="POST" action="{{ route('admin.registrations.store') }}">
++                @csrf
++                <div class="row g-3">
++                    <div class="col-md-6">
++                        <label for="user_id" class="form-label">Calon Member <span class="text-danger">*</span></label>
++                        <select id="user_id" name="user_id" class="form-select @error('user_id') is-invalid @enderror" required>
++                            <option value="">Pilih pendaftar</option>
++                            @foreach($users as $user)
++                                <option value="{{ $user->id }}" @selected(old('user_id') == $user->id)>{{ $user->name }} — {{ $user->email }}</option>
++                            @endforeach
++                        </select>
++                        @error('user_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
++                    </div>
++                    <div class="col-md-6">
++                        <label for="package_id" class="form-label">Paket <span class="text-danger">*</span></label>
++                        <select id="package_id" name="package_id" class="form-select @error('package_id') is-invalid @enderror" required>
++                            <option value="">Pilih Paket</option>
++                            @foreach($packages as $package)
++                                <option value="{{ $package->id }}" @selected(old('package_id') == $package->id)>{{ $package->name }} — {{ $package->duration }} bulan — Rp {{ number_format($package->price, 0, ',', '.') }}</option>
++                            @endforeach
++                        </select>
++                        @error('package_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
++                    </div>
++                    <div class="col-md-4">
++                        <label for="phone" class="form-label">Nomor Telepon <span class="text-danger">*</span></label>
++                        <input id="phone" name="phone" type="tel" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone') }}" required maxlength="30">
++                        @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
++                    </div>
++                    <div class="col-md-4">
++                        <label for="gender" class="form-label">Jenis Kelamin</label>
++                        <select id="gender" name="gender" class="form-select @error('gender') is-invalid @enderror">
++                            <option value="">Pilih</option>
++                            <option value="Laki-laki" @selected(old('gender') === 'Laki-laki')>Laki-laki</option>
++                            <option value="Perempuan" @selected(old('gender') === 'Perempuan')>Perempuan</option>
++                        </select>
++                        @error('gender')<div class="invalid-feedback">{{ $message }}</div>@enderror
++                    </div>
++                    <div class="col-md-4">
++                        <label for="birth_date" class="form-label">Tanggal Lahir</label>
++                        <input id="birth_date" type="date" name="birth_date" class="form-control @error('birth_date') is-invalid @enderror" value="{{ old('birth_date') }}" max="{{ today()->toDateString() }}">
++                        @error('birth_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
++                    </div>
++                    <div class="col-12">
++                        <label for="address" class="form-label">Alamat</label>
++                        <textarea id="address" name="address" class="form-control @error('address') is-invalid @enderror" rows="3">{{ old('address') }}</textarea>
++                        @error('address')<div class="invalid-feedback">{{ $message }}</div>@enderror
++                    </div>
++                    <div class="col-12">
++                        <label for="notes" class="form-label">Catatan</label>
++                        <textarea id="notes" name="notes" class="form-control @error('notes') is-invalid @enderror" rows="3">{{ old('notes') }}</textarea>
++                        @error('notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
++                    </div>
++                </div>
++                <div class="d-flex justify-content-end gap-2 mt-4">
++                    <a href="{{ route('registrations.index') }}" class="btn btn-light border">Batal</a>
++                    <button class="btn btn-primary" type="submit">Simpan Pendaftaran</button>
++                </div>
++            </form>
++        @endif
++    </div>
++</div>
++@endsection
+diff --git a/resources/views/registrations/index.blade.php b/resources/views/registrations/index.blade.php
+index 7965554..a359e3a 100644
+--- a/resources/views/registrations/index.blade.php
++++ b/resources/views/registrations/index.blade.php
+@@ -155,9 +155,14 @@
+     <div class="mt-3">{{ $registrations->links() }}</div>
+ </section>
+ @else
+-<div class="mb-4">
+-    <h1 class="page-title mb-1">{{ auth()->user()->role === 'admin' ? 'Kelola Pendaftaran Calon Member' : 'Data Pendaftar Gym' }}</h1>
+-    <p class="text-muted mb-0">{{ auth()->user()->role === 'admin' ? 'Verifikasi, ubah, dan kelola pendaftaran calon member.' : 'Pantau perkembangan calon member secara read-only.' }}</p>
++<div class="mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
++    <div>
++        <h1 class="page-title mb-1">{{ auth()->user()->role === 'admin' ? 'Kelola Pendaftaran Calon Member' : 'Data Pendaftar Gym' }}</h1>
++        <p class="text-muted mb-0">{{ auth()->user()->role === 'admin' ? 'Verifikasi, ubah, dan kelola pendaftaran calon member.' : 'Pantau perkembangan calon member secara read-only.' }}</p>
++    </div>
++    @if(auth()->user()->role === 'admin')
++        <a href="{{ route('admin.registrations.create') }}" class="btn btn-primary btn-sm">Tambah Pendaftaran</a>
++    @endif
+ </div>
+ <div class="card crud-toolbar bg-white mb-3"><div class="card-body py-3"><form method="GET" class="d-flex flex-wrap gap-2"><div class="input-group" style="max-width:320px"><span class="input-group-text bg-white border-end-0"><i data-lucide="search" style="width:17px"></i></span><input class="form-control border-start-0 ps-0" name="search" value="{{ request('search') }}" placeholder="Cari nama, nomor, email, atau telepon..."></div><select name="status" class="form-select" style="width:auto"><option value="">Semua Status</option>@foreach(['Menunggu Verifikasi', 'Disetujui', 'Ditolak', 'Menunggu Pembayaran', 'Pembayaran Berhasil', 'Selesai'] as $status)<option value="{{ $status }}" @selected(request('status') === $status)>{{ $status }}</option>@endforeach</select><button class="btn btn-primary">Filter</button></form></div></div>
+ <style>.registration-management-card{border:0;border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.055);transition:.2s}.registration-management-card:hover{transform:translateY(-3px)}.registration-number{font-family:monospace;color:#2563eb;background:#eef4ff;border-radius:8px;padding:5px 8px;font-size:12px}</style>
+diff --git a/routes/web.php b/routes/web.php
+index d115fb5..20aa16c 100644
+--- a/routes/web.php
++++ b/routes/web.php
+@@ -8,8 +8,8 @@
+ use App\Http\Controllers\MembershipController;
+ use App\Http\Controllers\OwnerDashboardController;
+ use App\Http\Controllers\PackageController;
+-use App\Http\Controllers\PaymentController;
+ use App\Http\Controllers\PasswordResetController;
++use App\Http\Controllers\PaymentController;
+ use App\Http\Controllers\RegistrantDashboardController;
+ use App\Http\Controllers\RegistrationController;
+ use App\Http\Controllers\ReportController;
+@@ -43,6 +43,8 @@
+     Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
+     Route::resource('users', UserController::class);
+     Route::patch('users/{user}/status', [UserController::class, 'toggleStatus'])->name('users.status');
++    Route::get('registrations/create', [RegistrationController::class, 'adminCreate'])->name('admin.registrations.create');
++    Route::post('registrations/create', [RegistrationController::class, 'adminStore'])->name('admin.registrations.store');
+     Route::resource('registrations', RegistrationController::class)->except(['create', 'store']);
+     Route::patch('registrations/{registration}/status', [RegistrationController::class, 'updateStatus'])->name('registrations.status');
+     Route::resource('members', MemberController::class);
